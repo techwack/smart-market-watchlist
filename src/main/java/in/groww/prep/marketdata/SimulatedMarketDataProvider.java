@@ -40,8 +40,15 @@ public class SimulatedMarketDataProvider implements MarketDataProvider {
     private static final Duration TICK = Duration.ofSeconds(3);
     /** A notional trading session, so volume can be modelled as a pace. */
     private static final Duration SESSION = Duration.ofHours(6);
-    /** Bounded history per symbol — enough for a sparkline, never unbounded. */
-    private static final int MAX_HISTORY = 120;
+    /**
+     * Bounded history per symbol — enough for a sparkline, never unbounded.
+     * 600 points at a 3s tick is ~30 minutes. Sized so that a user who last
+     * looked a while ago still has their acknowledgement point inside the
+     * retained window: if the split falls off the back, the sparkline loses
+     * its grey "already seen" half and silently stops answering the question
+     * it exists to answer.
+     */
+    private static final int MAX_HISTORY = 600;
 
     private final Map<String, Quote> latest = new ConcurrentHashMap<>();
     private final Map<String, Double> openPrice = new ConcurrentHashMap<>();
