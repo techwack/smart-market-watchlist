@@ -1,0 +1,46 @@
+# Default profile is deliberately zero-dependency: file-based H2, no Docker,
+# no services to install. Two reasons, both defensible:
+#   1. Anyone evaluating this can run it in one command. Every external
+#      dependency is another way for that to fail on someone else's machine.
+#   2. The file (not in-memory) store means watchlists and acknowledgements
+#      survive a restart — which is the whole "close the app, come back
+#      later and see what changed" requirement, demonstrable without Docker.
+#
+# Postgres is the real target for a production deployment and is one flag
+# away: `mvn spring-boot:run -Dspring-boot.run.profiles=postgres`
+# (see application-postgres.yml). JPA mappings are identical for both.
+spring:
+  application:
+    name: smart-market-watchlist
+
+  datasource:
+    url: jdbc:h2:file:./data/watchlist;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+server:
+  port: 8080
+
+watchlist:
+  change-threshold-pct: 1.0    # abs % move since last ack to register at all
+  urgent-threshold-pct: 3.0    # abs % move that gets ranked above the rest
+  volume-spike-ratio: 3.0      # x the symbol's expected volume pace = notable
+  implausible-move-pct: 40.0   # beyond this, assume a split/bad data, not a move
+  stale-after-seconds: 30      # quote older than this is flagged stale to the client
+  anchor-max-age-days: 7       # older "last seen" anchors stop being a useful baseline
